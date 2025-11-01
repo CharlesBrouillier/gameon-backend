@@ -1,5 +1,6 @@
 package fr.gameon.service;
 
+import fr.gameon.dto.PagedResponse;
 import fr.gameon.entity.*;
 import fr.gameon.exception.ResourceNotFoundException;
 import fr.gameon.repository.*;
@@ -7,7 +8,9 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -35,8 +38,18 @@ public class GameService implements IGameService {
         this.publisherRepository = publisherRepository;
     }
 
-    public List<GameEntity> getGames() {
-        return gameRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
+    public PagedResponse<GameEntity> getGames(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<GameEntity> resultPage = gameRepository.findAll(pageable);
+
+        return new PagedResponse<>(resultPage.getContent(), resultPage.getTotalPages(), resultPage.getTotalElements(), resultPage.getSize());
+    }
+
+    public PagedResponse<GameEntity> getGamesByFilters(Double minPrice, Double maxPrice, Integer minPlayers, Integer maxPlayers, Integer minDuration, Integer maxDuration, List<Integer> mechanisms, Integer mechanismsSize, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<GameEntity> resultPage = gameRepository.findGamesByFilters(minPrice, maxPrice, minPlayers, maxPlayers, minDuration, maxDuration, mechanisms, mechanismsSize, pageable);
+
+        return new PagedResponse<>(resultPage.getContent(), resultPage.getTotalPages(), resultPage.getTotalElements(), resultPage.getSize());
     }
 
     public ResponseEntity<GameEntity> getGameById(Long id) {
@@ -51,10 +64,6 @@ public class GameService implements IGameService {
                 .orElseThrow(() -> new ResourceNotFoundException("Game not found with slug : " + slug));
 
         return ResponseEntity.ok(_game);
-    }
-
-    public List<GameEntity> getGamesByFilters(Double minPrice, Double maxPrice, Integer minPlayers, Integer maxPlayers, Integer minDuration, Integer maxDuration, List<Integer> mechanisms, Integer mechanismsSize) {
-        return gameRepository.findGamesByFilters(minPrice, maxPrice, minPlayers, maxPlayers, minDuration, maxDuration, mechanisms, mechanismsSize);
     }
 
     public List<GameEntity> getGamesByMechanismId(String mechanismId) {

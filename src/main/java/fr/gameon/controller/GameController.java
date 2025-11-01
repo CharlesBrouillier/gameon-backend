@@ -1,5 +1,6 @@
 package fr.gameon.controller;
 
+import fr.gameon.dto.PagedResponse;
 import fr.gameon.entity.GameEntity;
 import fr.gameon.service.GameService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,8 +17,33 @@ public class GameController {
     GameService gameService;
 
     @GetMapping
-    public List<GameEntity> getGames() {
-        return gameService.getGames();
+    public ResponseEntity<PagedResponse<GameEntity>> getGames(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(gameService.getGames(page, size));
+    }
+
+    @GetMapping("/filter")
+    public ResponseEntity<PagedResponse<GameEntity>> getFilteredGames(
+            @RequestParam(required = false) Double minPrice,
+            @RequestParam(required = false) Double maxPrice,
+            @RequestParam(required = false) Integer minPlayers,
+            @RequestParam(required = false) Integer maxPlayers,
+            @RequestParam(required = false) Integer minDuration,
+            @RequestParam(required = false) Integer maxDuration,
+            @RequestParam(required = false) List<Integer> mechanisms,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        if (mechanisms != null && mechanisms.isEmpty()) {
+            mechanisms = null;
+        }
+
+        Integer mechanismsSize = (mechanisms != null) ? mechanisms.size() : 0;
+        return ResponseEntity.ok(
+                gameService.getGamesByFilters(minPrice, maxPrice, minPlayers, maxPlayers,
+                        minDuration, maxDuration, mechanisms, mechanismsSize, page, size)
+        );
     }
 
     @GetMapping("/{value}")
@@ -28,25 +54,6 @@ public class GameController {
         } catch (NumberFormatException e) {
             return gameService.getGameBySlug(value);
         }
-    }
-
-    @GetMapping("/filter")
-    public ResponseEntity<List<GameEntity>> getFilteredGames(
-            @RequestParam(required = false) Double minPrice,
-            @RequestParam(required = false) Double maxPrice,
-            @RequestParam(required = false) Integer minPlayers,
-            @RequestParam(required = false) Integer maxPlayers,
-            @RequestParam(required = false) Integer minDuration,
-            @RequestParam(required = false) Integer maxDuration,
-            @RequestParam(required = false) List<Integer> mechanisms) {
-
-        if (mechanisms != null && mechanisms.isEmpty()) {
-            mechanisms = null;
-        }
-
-        Integer mechanismsSize = (mechanisms != null) ? mechanisms.size() : 0;
-        List<GameEntity> filteredGames = gameService.getGamesByFilters(minPrice, maxPrice, minPlayers, maxPlayers, minDuration, maxDuration, mechanisms, mechanismsSize);
-        return ResponseEntity.ok(filteredGames);
     }
 
     @GetMapping("/byMechanism/{gameId}")

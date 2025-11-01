@@ -1,10 +1,11 @@
 package fr.gameon.repository;
 
 import fr.gameon.entity.GameEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -12,8 +13,6 @@ import java.util.Optional;
 
 @Repository
 public interface GameRepository extends JpaRepository<GameEntity, Long> {
-
-    List<GameEntity> findByNameContaining(String name);
 
     @Query("SELECT g FROM GameEntity g " +
             "JOIN g.mechanisms m " +
@@ -26,10 +25,15 @@ public interface GameRepository extends JpaRepository<GameEntity, Long> {
             "AND (:maxDuration IS NULL OR g.maxDuration <= :maxDuration) " +
             "AND (:mechanisms IS NULL OR (SELECT COUNT(m2) FROM g.mechanisms m2 WHERE m2.id IN :mechanisms) = :mechanismsSize) " +
             "GROUP BY g")
-    List<GameEntity> findGamesByFilters(@Param("minPrice") Double minPrice, @Param("maxPrice") Double maxPrice,
-                                        @Param("minPlayers") Integer minPlayers, @Param("maxPlayers") Integer maxPlayers,
-                                        @Param("minDuration") Integer minDuration, @Param("maxDuration") Integer maxDuration,
-                                        @Param("mechanisms") List<Integer> mechanisms, @Param("mechanismsSize") Integer mechanismsSize);
+    Page<GameEntity> findGamesByFilters(@Param("minPrice") Double minPrice,
+                                        @Param("maxPrice") Double maxPrice,
+                                        @Param("minPlayers") Integer minPlayers,
+                                        @Param("maxPlayers") Integer maxPlayers,
+                                        @Param("minDuration") Integer minDuration,
+                                        @Param("maxDuration") Integer maxDuration,
+                                        @Param("mechanisms") List<Integer> mechanisms,
+                                        @Param("mechanismsSize") Integer mechanismsSize,
+                                        Pageable pageable);
 
     @Query("SELECT g FROM GameEntity g JOIN g.mechanisms m WHERE m.id = :mechanismId")
     List<GameEntity> findGamesByMechanismId(@Param("mechanismId") String mechanismId);
